@@ -31,3 +31,23 @@ export function extractVariables(row: object) {
 
   return { columns, variables, columnsVariables, values };
 }
+
+export abstract class TransactionSupport {
+  abstract getPostgresClient(): PostgresClient;
+
+  async transaction<A>(f: () => A): Promise<A> {
+    await this.getPostgresClient().query("BEGIN TRANSACTION;");
+
+    let result: A;
+    try {
+      result = f();
+    } catch (e) {
+      await this.getPostgresClient().query("ROLLBACK;");
+      throw e;
+    }
+
+    await this.getPostgresClient().query("COMMIT;");
+
+    return result;
+  }
+}

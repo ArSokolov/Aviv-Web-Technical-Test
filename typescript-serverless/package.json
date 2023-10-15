@@ -8,6 +8,7 @@
     "@middy/http-json-body-parser": "^4.1.0",
     "axios": "^0.27.2",
     "express": "^4.17.3",
+    "node-gyp": "^9.4.0",
     "pg-native": "^3.0.1",
     "postgres": "^3.3.3",
     "serverless-postgres": "^2.0.0"
@@ -31,10 +32,11 @@
     "tsconfig-paths": "^3.9.0",
     "typescript": "^4.9.4",
     "vitest": "^0.27.2",
+    "@testcontainers/postgresql": "10.2.1",
     "yaml": "^2.2.2"
   },
   "scripts": {
-    "generate:types": "./bin/generate-types.js",
+    "generate:types": "node ./bin/generate-types.js",
     "watch:serverless": "serverless offline start --reloadHandler --host 0.0.0.0 --noPrependStageInUrl",
     "watch": "npm run generate:types && npm run watch:serverless",
     "build": "npm run generate:types && tsc --noEmit --skipLibCheck",

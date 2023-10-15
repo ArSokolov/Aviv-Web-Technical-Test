@@ -1,5 +1,5 @@
 import PostgresClient from "serverless-postgres";
-import { Listing, ListingWrite } from "@/types.generated";
+import { Listing, ListingRead, ListingWrite } from "@/types.generated";
 import { extractVariables } from "@/libs/postgres";
 import { EntityNotFound } from "@/libs/errors";
 
@@ -65,17 +65,33 @@ function listingToTableRow(
   };
 }
 
-export function getRepository(postgres: PostgresClient) {
-  return {
+interface ListingRepo {
+  getAllListings(): Promise<Listing[]>;
+
+  getListing(listingId: number): Promise<ListingRead & ListingWrite>;
+
+  insertListing(listing: ListingWrite): Promise<ListingRead & ListingWrite>;
+
+  updateListing(
+    listingId: number,
+    listing: ListingWrite
+  ): Promise<[Listing, Listing]>;
+}
+
+export function getRepository(postgres: PostgresClient): ListingRepo {
+  return <ListingRepo>{
     async getAllListings(): Promise<Listing[]> {
-      const queryString = `SELECT * FROM listing`;
+      const queryString = `SELECT *
+                           FROM listing`;
       const result = await postgres.query(queryString);
 
       return result.rows.map(tableRowToListing);
     },
 
     async getListing(listingId: number) {
-      const queryString = `SELECT * FROM listing WHERE id = $1`;
+      const queryString = `SELECT *
+                           FROM listing
+                           WHERE id = $1`;
       const queryValues = [listingId];
 
       const result = await postgres.query(queryString, queryValues);
@@ -101,7 +117,7 @@ export function getRepository(postgres: PostgresClient) {
 
       const queryString = `
         INSERT INTO listing (${columns.join(",")})
-        VALUES(${variables})
+        VALUES (${variables})
         RETURNING *
       `;
       const result = await postgres.query(queryString, queryValues);
@@ -109,22 +125,28 @@ export function getRepository(postgres: PostgresClient) {
       return tableRowToListing(result.rows[0]);
     },
 
-    async updateListing(listingId: number, listing: ListingWrite) {
-      const originalListing = await this.getListing(listingId);
+    async updateListing(
+      listingId: number,
+      listing: ListingWrite
+    ): Promise<[Listing, Listing]> {
+      const originalListing: Listing = await this.getListing(listingId);
 
-      const tableRow = listingToTableRow(listing, originalListing.created_date);
+      const tableRow = listingToTableRow(
+        listing,
+        new Date(originalListing.created_date)
+      );
       const { columns, columnsVariables, values } = extractVariables(tableRow);
 
       const queryString = `
         UPDATE listing
-          SET ${columnsVariables.join(", ")}
-          WHERE id = $${columns.length + 1}
+        SET ${columnsVariables.join(", ")}
+        WHERE id = $${columns.length + 1}
         RETURNING *
       `;
       const queryValues = [...values, listingId];
       const result = await postgres.query(queryString, queryValues);
 
-      return tableRowToListing(result.rows[0]);
+      return [originalListing, tableRowToListing(result.rows[0])];
     },
   };
 }

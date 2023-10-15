@@ -2,6 +2,7 @@ import { functionHandler } from "@/libs/function";
 import { getRepository } from "@/repositories/listings";
 import { Listing, ListingWrite } from "@/types.generated";
 import { EntityNotFound, NotFound } from "@/libs/errors";
+import { ListingService } from "@/services/service";
 
 export const getListings = functionHandler<Listing[]>(
   async (_event, context) => {
@@ -13,9 +14,9 @@ export const getListings = functionHandler<Listing[]>(
 
 export const addListing = functionHandler<Listing, ListingWrite>(
   async (event, context) => {
-    const listing = await getRepository(context.postgres).insertListing(
-      event.body
-    );
+    const service = new ListingService(context.postgres);
+
+    const listing = await service.save(event.body);
 
     return { statusCode: 201, response: listing };
   }
@@ -23,8 +24,9 @@ export const addListing = functionHandler<Listing, ListingWrite>(
 
 export const updateListing = functionHandler<Listing, ListingWrite>(
   async (event, context) => {
+    const service = new ListingService(context.postgres);
     try {
-      const listing = await getRepository(context.postgres).updateListing(
+      const listing = await service.update(
         parseInt(event.pathParameters.id),
         event.body
       );
