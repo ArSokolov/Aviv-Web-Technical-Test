@@ -31,12 +31,22 @@ class SqlAlchemyListingRepository(ports.ListingRepository):
         existing_listing = self.db_session.get(models.ListingModel, listing_id)
         if existing_listing is None:
             raise exceptions.ListingNotFound
-        self.db_session.delete(existing_listing)
-
+        # update the existing record instead of deleting it in order to keep
+        # the original creation date
         listing_model = mappers.ListingMapper.from_entity_to_model(listing)
-        listing_model.id = listing_id
-        self.db_session.add(listing_model)
+        existing_listing.name = listing_model.name
+        existing_listing.street_address = listing_model.street_address
+        existing_listing.postal_code = listing_model.postal_code
+        existing_listing.city = listing_model.city
+        existing_listing.country = listing_model.country
+        existing_listing.description = listing_model.description
+        existing_listing.building_type = listing_model.building_type
+        existing_listing.price = listing_model.price
+        existing_listing.surface_area_m2 = listing_model.surface_area_m2
+        existing_listing.rooms_count = listing_model.rooms_count
+        existing_listing.bedrooms_count = listing_model.bedrooms_count
+        existing_listing.contact_phone_number = listing_model.contact_phone_number
         self.db_session.commit()
 
-        listing_dict = mappers.ListingMapper.from_model_to_dict(listing_model)
+        listing_dict = mappers.ListingMapper.from_model_to_dict(existing_listing)
         return listing_dict
