@@ -14,7 +14,8 @@ if __name__ == "__main__":
     for i in range(10):
         faker = Faker()
         locale = faker.random_element(["fr-FR", "de-DE", "nl-BE"])
-        listing = factories.entties.Listing(locale).build()
+        # typo fixed: factories.entties does not exist
+        listing = factories.entities.Listing(locale).build()
         print(listing.json(ensure_ascii=False))
 
     logger.info("done")
